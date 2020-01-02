@@ -14,6 +14,7 @@ import numpy as np
 # and stuff for drawing
 import pygame, sys
 from pygame.locals import *
+from datetime import datetime as dt
 
 
 # defined functions
@@ -31,6 +32,9 @@ def subarraysum(array, x, y):
     x = min(max(x,0),c - 1)
     y = min(max(y,0),r - 1)
     return sum(sum(array[max(y-1,0):min(y+2,r), max(x-1,0):min(x+2,c)])) - array[y,x]
+
+# pre start stuff
+NOW = dt.now()
 
 
 # some variables for general setup
@@ -94,7 +98,7 @@ def gen(world_now):
 
 
 def main():
-    global world_now
+    global world_now,NOW
     pygame.init()
 
     DISPLAY=pygame.display.set_mode((width,height),0,32)
@@ -105,12 +109,17 @@ def main():
     active = True
     setOnMouse = False
     mouseValue = 1
+    drawstep = 1
+    step = 0
 
     while True:
+        step += 1
+
         for event in pygame.event.get():
             if event.type==QUIT:
                 pygame.quit()
-                print(f'Genertions: {generation}')
+                NOW = (dt.now() - NOW).total_seconds()
+                print(f'Genertions: {generation}, in {NOW}, so: {generation / NOW} gen/s')
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 
@@ -136,6 +145,7 @@ def main():
                         world_now = np.zeros((R,C))
             elif event.type == pygame.MOUSEBUTTONUP:
                 setOnMouse = False
+        
         if setOnMouse:
             mmx, mmy = pygame.mouse.get_pos()
             mmc = max(0,min(C-1,int((mmx - offsetX)/(size)))) 
@@ -143,18 +153,15 @@ def main():
             
             world_now[mmr, mmc] = mouseValue
             
-            # if world_now[mmr, mmc]:
-            #     world_now[mmr, mmc] = 0
-            # else:
-            #     world_now[mmr, mmc] = 1
-
-        DISPLAY.fill((BCK))
-        for x in range(C):
-            for y in range(R):
-                color = (166,166,166)
-                if world_now[y,x]:
-                    color = (255-world_now[y,x],255-int(world_now[y,x]/2),world_now[y,x])
-                pygame.draw.rect(DISPLAY,color,(offsetX + size*x+1, offsetY + size*y+1,size-1,size-1))
+        if not (step % drawstep):
+            step = 0 
+            DISPLAY.fill((BCK))
+            for x in range(C):
+                for y in range(R):
+                    color = (166,166,166)
+                    if world_now[y,x]:
+                        color = (255-world_now[y,x],255-int(world_now[y,x]/2),world_now[y,x])
+                    pygame.draw.rect(DISPLAY,color,(offsetX + size*x+1, offsetY + size*y+1,size-1,size-1))
     
         if active:
             world_now = gen(world_now)
