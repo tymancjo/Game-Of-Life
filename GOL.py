@@ -7,6 +7,7 @@
 # plan to work it out as pythonic as possible :)
 
 # one: play around with numpy arrays to understood it deeply
+# pygame: used for the visual presentation of the system
 
 # let's import the numpy library
 import numpy as np
@@ -39,8 +40,8 @@ NOW = dt.now()
 
 # some variables for general setup
 # sizes of the world:
-sizeX = 128 // 2
-sizeY = 60 // 2
+sizeX = 128 // 3
+sizeY = 60 // 3
 
 # display resolution
 width = 1280 
@@ -115,6 +116,11 @@ def main():
     while True:
         step += 1
 
+        if not active:
+            BCK = (25,25,25)
+        else:
+            BCK = (128,128,128)
+
         for event in pygame.event.get():
             if event.type==QUIT:
                 pygame.quit()
@@ -136,15 +142,25 @@ def main():
                     
                 elif mr >= R:
                     active = not active
-                    if not active:
-                        BCK = (25,25,25)
-                    else:
-                        BCK = (128,128,128)
+                    
                 else:
                     if not active:
                         world_now = np.zeros((R,C))
             elif event.type == pygame.MOUSEBUTTONUP:
                 setOnMouse = False
+
+            elif event.type == pygame.KEYDOWN:
+                if not active and event.key == pygame.K_SPACE:
+                    world_now = gen(world_now)
+
+                elif event.key == pygame.K_r:
+                    world_now = np.zeros((R,C))
+                    active= False
+
+                elif event.key == pygame.K_s:
+                    active = not active
+
+                
         
         if setOnMouse:
             mmx, mmy = pygame.mouse.get_pos()
@@ -154,6 +170,7 @@ def main():
             world_now[mmr, mmc] = mouseValue
             
         if not (step % drawstep):
+            
             step = 0 
             DISPLAY.fill((BCK))
             for x in range(C):
