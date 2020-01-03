@@ -18,21 +18,6 @@ from pygame.locals import *
 from datetime import datetime as dt
 
 
-# defined functions
-def subarraysum(array, x, y):
-    '''This is summing the value around given place in array 
-    for the game of life algorithm 
-    Inputs:
-    array - 2D the array we are working on
-    x,y - col, row coordinates of theanalyzed point
-    return:
-    sum of point neighbors 
-    '''
-    # limiting to the array size 
-    r, c = array.shape
-    x = min(max(x,0),c - 1)
-    y = min(max(y,0),r - 1)
-    return sum(sum(array[max(y-1,0):min(y+2,r), max(x-1,0):min(x+2,c)])) - array[y,x]
 
 # pre start stuff
 NOW = dt.now()
@@ -68,6 +53,22 @@ R, C = world_now.shape
 # and proceed with the GOL algorithm
 # sum 2 or 3 - keep alive if alive
 # sum 3 - born if death
+
+# defined functions
+def subarraysum(array, x, y):
+    '''This is summing the value around given place in array 
+    for the game of life algorithm 
+    Inputs:
+    array - 2D the array we are working on
+    x,y - col, row coordinates of theanalyzed point
+    return:
+    sum of point neighbors 
+    '''
+    # limiting to the array size 
+    r, c = array.shape
+    x = min(max(x,0),c - 1)
+    y = min(max(y,0),r - 1)
+    return sum(sum(array[max(y-1,0):min(y+2,r), max(x-1,0):min(x+2,c)])) - array[y,x]
 
 def gen(world_now):
     global generation
@@ -170,7 +171,6 @@ def main():
             world_now[mmr, mmc] = mouseValue
             
         if not (step % drawstep):
-            
             step = 0 
             DISPLAY.fill((BCK))
             for x in range(C):
