@@ -71,6 +71,12 @@ def subarraysum(array, x, y):
     return sum(sum(array[max(y-1,0):min(y+2,r), max(x-1,0):min(x+2,c)])) - array[y,x]
 
 def gen(world_now):
+    '''This is the Game Of Life single generation function.
+    Input:
+    world_now - the 2D numpy array of the current world status
+    Output:
+    numpy array of the world status after single generation'''
+    
     global generation
     # lets keep the current state as next one
     world_next = np.array(world_now)
@@ -158,7 +164,7 @@ def main():
                     world_now = np.zeros((R,C))
                     active= False
 
-                elif event.key == pygame.K_s:
+                elif event.key in [pygame.K_s, pygame.K_g]:
                     active = not active
 
                 
