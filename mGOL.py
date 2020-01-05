@@ -18,7 +18,8 @@ import pygame, sys
 from pygame.locals import *
 from datetime import datetime as dt
 
-
+# for multiprocessing
+import concurrent.futures
 
 # pre start stuff
 NOW = dt.now()
@@ -26,8 +27,8 @@ NOW = dt.now()
 
 # some variables for general setup
 # sizes of the world:
-sizeX = 128 // 3
-sizeY = 60 // 3
+sizeX = 50 // 1
+sizeY = 30 // 1
 
 # display resolution
 width = 1280 
@@ -42,7 +43,7 @@ offsetX = int((width - size*sizeX) / 2)
 offsetY = int((height - size*sizeY) / 2) 
 
 # generating the start status of the world
-world_now = np.random.randint(2, size=(sizeY, sizeX))
+world_now = np.random.randint(2, size=(sizeY, sizeX),dtype=int)
 generation = 0
 # print('Initial world state:')
 # print(world_now)
@@ -71,24 +72,37 @@ def subarraysum(array, x, y):
     y = min(max(y,0),r - 1)
     return sum(sum(array[max(y-1,0):min(y+2,r), max(x-1,0):min(x+2,c)])) - array[y,x]
 
-def gen(world_now):
+def gen(area = None):
     '''This is the Game Of Life single generation function.
     Input:
-    world_now - the 2D numpy array of the current world status
+    area - the tuple of ranges in C and R: ((C1,C2),(R1,R2))
     Output:
     numpy array of the world status after single generation'''
+    global generation, world_now
     
-    global generation
     # lets keep the current state as next one
     world_next = np.array(world_now)
+    print(area)
+    if not area:
+        Crange = range(C)
+        Rrange = range(R)
+    else:
+        Crange = range(area[0][0],area[0][1]+1)
+        Rrange = range(area[1][0],area[1][1]+1)
 
     # lets normalize world_now
-    world_now = np.nan_to_num(world_now / world_now)
+    world_now_norm = np.array(world_now)
+    world_now_norm[world_now_norm > 0] = 1
 
+    # making empty array for world update after gen
+    clean_world = np.zeros((R,C),dtype=int)
+
+    
+    # man from range: range(start, stop, step)
     # lets analyze
-    for x in range(C):
-        for y in range(R):
-            suma = subarraysum(world_now, x, y)
+    for x in Crange:
+        for y in Rrange:
+            suma = int(subarraysum(world_now_norm, x, y))
             current = world_next[y,x]
 
             if current and 2 <= suma <= 3:  # we survive
@@ -98,16 +112,17 @@ def gen(world_now):
             else:  # we die
                 world_next[y,x] = 0
 
+            clean_world[y,x] = int(world_next[y,x])
     # we bring back the world status to world now
-    world_now = np.array(world_next)
+    # world_now = np.array(world_next)
     generation += 1
-    return world_now
+    return clean_world
     # print(f'World of {generation}:')
     # print(world_now)
 
 
 def main():
-    global world_now,NOW
+    global world_now,generation, NOW
     pygame.init()
 
     DISPLAY=pygame.display.set_mode((width,height),0,32)
@@ -120,6 +135,7 @@ def main():
     mouseValue = 1
     drawstep = 1
     step = 0
+    makestep = False
 
     while True:
         step += 1
@@ -159,11 +175,11 @@ def main():
 
             elif event.type == pygame.KEYDOWN:
                 if not active and event.key == pygame.K_SPACE:
-                    world_now = gen(world_now)
+                    makestep = True
 
                 elif event.key == pygame.K_r:
+                    active = False
                     world_now = np.zeros((R,C))
-                    active= False
 
                 elif event.key in [pygame.K_s, pygame.K_g]:
                     active = not active
@@ -184,11 +200,44 @@ def main():
                 for y in range(R):
                     color = (166,166,166)
                     if world_now[y,x]:
-                        color = (255-world_now[y,x],255-int(world_now[y,x]/2),world_now[y,x])
+                        color = (max(255-world_now[y,x],0),max(255-int(world_now[y,x]/2),0),min(world_now[y,x],255))
                     pygame.draw.rect(DISPLAY,color,(offsetX + size*x+1, offsetY + size*y+1,size-1,size-1))
     
+        if makestep:
+            active = True
+
         if active:
-            world_now = gen(world_now)
+            ranges = [
+                ((0,20),(0,15)),
+                ((20,49),(0,15)),
+                ((0,20),(15,29)),
+                ((20,49),(15,29)),
+            ]
+            
+            world_next = np.zeros((R,C))
+            for r in ranges:
+                A = gen(r)
+                c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
+                world_next[a:b+1,c:d+1] = A[a:b+1,c:d+1]
+                generation += 1
+            
+            
+            # with concurrent.futures.ProcessPoolExecutor() as executor:
+            #     results = executor.map(gen, ranges)
+                
+            #     for ix, res in enumerate(results):
+            #         A = res
+            #         r = ranges[ix]
+            #         c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
+            #         world_next[a:b+1,c:d+1] = A[a:b+1,c:d+1]
+            #         generation += 1
+
+            world_now = world_next
+
+            if makestep:
+                active = False
+                makestep = False
+
         pygame.display.update()
 
 
