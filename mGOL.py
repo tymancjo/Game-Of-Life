@@ -21,14 +21,12 @@ from datetime import datetime as dt
 # for multiprocessing
 import concurrent.futures
 
-# pre start stuff
-NOW = dt.now()
 
 
 # some variables for general setup
 # sizes of the world:
-sizeX = 50 // 1
-sizeY = 30 // 1
+sizeX = 200 // 1
+sizeY = 100 // 1
 
 # display resolution
 width = 1280 
@@ -36,7 +34,7 @@ height = 720
 # height = int((sizeY / sizeX) * width) + 100 
 
 # size for the drawed rectangle
-size = int(min(width / sizeX, height / sizeY))
+size = int(min(width / sizeX, (height - 50) / sizeY))
 
 # centering display
 offsetX = int((width - size*sizeX) / 2) 
@@ -55,6 +53,38 @@ R, C = world_now.shape
 # and proceed with the GOL algorithm
 # sum 2 or 3 - keep alive if alive
 # sum 3 - born if death
+
+# function for splitting the world array into sub portions
+def getranges(array, dR=1, dC=1):
+    '''this function is about figuring out sets of tuples
+    to split the array for multiprocess needs
+    Inputs:
+    array - the 2D np array of the world
+    dR - divisions in rows
+    dC - divisions in columns
+    Output:
+    List of prepared set of tuples
+    '''
+    Rows, Cols = array.shape
+
+    rows_per_step = Rows // dR 
+    cols_per_step = Cols // dC
+    areas = dR * dC
+
+    output = []
+
+    for c in range(dC):
+        startC = c * cols_per_step
+        endC = min((c + 1) * cols_per_step, Cols- 1) 
+        for r in range(dR):
+            startR = r * rows_per_step
+            endR = min((r + 1) * rows_per_step, Rows - 1)
+
+            line = ((startC, endC), (startR, endR))
+            
+            output.append(line)
+    
+    return output
 
 # defined functions
 def subarraysum(array, x, y):
@@ -82,7 +112,7 @@ def gen(area = None):
     
     # lets keep the current state as next one
     world_next = np.array(world_now)
-    print(area)
+    # print(area)
     if not area:
         Crange = range(C)
         Rrange = range(R)
@@ -95,7 +125,8 @@ def gen(area = None):
     world_now_norm[world_now_norm > 0] = 1
 
     # making empty array for world update after gen
-    clean_world = np.zeros((R,C),dtype=int)
+
+    clean_world = np.zeros((len(Rrange),len(Crange)),dtype=int)
 
     
     # man from range: range(start, stop, step)
@@ -112,7 +143,7 @@ def gen(area = None):
             else:  # we die
                 world_next[y,x] = 0
 
-            clean_world[y,x] = int(world_next[y,x])
+            clean_world[y-min(Rrange),x-min(Crange)] = int(world_next[y,x])
     # we bring back the world status to world now
     # world_now = np.array(world_next)
     generation += 1
@@ -122,7 +153,7 @@ def gen(area = None):
 
 
 def main():
-    global world_now,generation, NOW
+    global world_now,generation
     pygame.init()
 
     DISPLAY=pygame.display.set_mode((width,height),0,32)
@@ -136,23 +167,29 @@ def main():
     drawstep = 1
     step = 0
     makestep = False
+    multi = False
+    averspeed = []
+
+    ranges = getranges(world_now, 10, 10)
+    print(ranges)
 
     while True:
         step += 1
+        NOW = dt.now()
 
         if not active:
             BCK = (25,25,25)
+        elif multi:
+            BCK = (128,2,2)
         else:
             BCK = (128,128,128)
 
         for event in pygame.event.get():
             if event.type==QUIT:
                 pygame.quit()
-                NOW = (dt.now() - NOW).total_seconds()
-                print(f'Genertions: {generation}, in {NOW}, so: {generation / NOW} gen/s')
                 sys.exit()
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                
                 mx, my = event.pos
                 mc = int((mx - offsetX)/(size)) 
                 mr = int((my - offsetY)/(size)) 
@@ -183,7 +220,9 @@ def main():
 
                 elif event.key in [pygame.K_s, pygame.K_g]:
                     active = not active
-
+                    
+                elif event.key in [pygame.K_m]:
+                    multi = not multi
                 
         
         if setOnMouse:
@@ -207,30 +246,23 @@ def main():
             active = True
 
         if active:
-            ranges = [
-                ((0,20),(0,15)),
-                ((20,49),(0,15)),
-                ((0,20),(15,29)),
-                ((20,49),(15,29)),
-            ]
-            
             world_next = np.zeros((R,C))
-            for r in ranges:
-                A = gen(r)
-                c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
-                world_next[a:b+1,c:d+1] = A[a:b+1,c:d+1]
-                generation += 1
-            
-            
-            # with concurrent.futures.ProcessPoolExecutor() as executor:
-            #     results = executor.map(gen, ranges)
-                
-            #     for ix, res in enumerate(results):
-            #         A = res
-            #         r = ranges[ix]
-            #         c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
-            #         world_next[a:b+1,c:d+1] = A[a:b+1,c:d+1]
-            #         generation += 1
+            if not multi:
+                for r in ranges:
+                    A = gen(r)
+                    c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
+                    world_next[a:b+1,c:d+1] = A
+                    generation += 1
+            else:
+                with concurrent.futures.ProcessPoolExecutor() as executor:
+                    results = executor.map(gen, ranges)
+                    
+                    for ix, res in enumerate(results):
+                        A = res
+                        r = ranges[ix]
+                        c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
+                        world_next[a:b+1,c:d+1] = A
+                        generation += 1
 
             world_now = world_next
 
@@ -239,6 +271,15 @@ def main():
                 makestep = False
 
         pygame.display.update()
+        NOW = (dt.now() - NOW).total_seconds()
+        averspeed.append(1/NOW)
+        avFreq = 1/NOW
+        if len(averspeed) >= 10:
+            avFreq = sum(averspeed) / 10
+            averspeed = []
+
+        print(f'Gen freq: {(1 / NOW):10.4f} gen/s; averFreq: {avFreq}', end='\r',flush=True)
+
 
 
 main()
