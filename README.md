@@ -16,3 +16,10 @@ S - toggle run/pause simulation
 space - when in pause - advance single generation
 R - reset to empty world and pause 
 
+## Module mGOL.py 
+This module is doing the same thing but can use multiprocessing for the generation calc.
+Use as the one above plus:
+key M - switch between use of multiprocessor or single serial calc.
+in multiprocessing mode the background is red.
+
+

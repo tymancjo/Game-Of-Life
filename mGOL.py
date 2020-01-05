@@ -25,8 +25,8 @@ import concurrent.futures
 
 # some variables for general setup
 # sizes of the world:
-sizeX = 200 // 1
-sizeY = 100 // 1
+sizeX = 200 // 5
+sizeY = 100 // 5
 
 # display resolution
 width = 1280 
@@ -169,8 +169,9 @@ def main():
     makestep = False
     multi = False
     averspeed = []
+    avFreq = 0
 
-    ranges = getranges(world_now, 10, 10)
+    ranges = getranges(world_now, C // 10, R // 10)
     print(ranges)
 
     while True:
@@ -273,12 +274,12 @@ def main():
         pygame.display.update()
         NOW = (dt.now() - NOW).total_seconds()
         averspeed.append(1/NOW)
-        avFreq = 1/NOW
-        if len(averspeed) >= 10:
-            avFreq = sum(averspeed) / 10
+        Freq = 1/NOW
+        if len(averspeed) >= 3*Freq:
+            avFreq = sum(averspeed) / (3*Freq)
             averspeed = []
-
-        print(f'Gen freq: {(1 / NOW):10.4f} gen/s; averFreq: {avFreq}', end='\r',flush=True)
+        
+        print(f'Gen freq: {(Freq):10.4f} gen/s; 3s averFreq: {avFreq} gem/s', end='\r',flush=True)
 
 
 
