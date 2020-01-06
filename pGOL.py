@@ -19,7 +19,8 @@ from pygame.locals import *
 from datetime import datetime as dt
 
 # for multiprocessing
-import concurrent.futures
+# import concurrent.futures
+from multiprocessing import Pool, cpu_count
 
 
 
@@ -169,7 +170,7 @@ def main():
     avFreq = 0
 
     # splitting the world array to smaller pieces for analysis 
-    ranges = getranges(world_now, C // 20, R // 20)
+    ranges = getranges(world_now, 2, 1)
     print(ranges)
 
     # main loop
@@ -260,16 +261,22 @@ def main():
             else:
                 txtcolor = (0, 0, 0)
                 # multiprocessing - parallel
-                with concurrent.futures.ThreadPoolExecutor() as executor:
                 # with concurrent.futures.ProcessPoolExecutor() as executor:
-                    results = executor.map(gen, ranges)
+                #     results = executor.map(gen, ranges)
+                try:
+                    workers = cpu_count()
+                except NotImplementedError:
+                    workers = 1
+                print(f'cpu workers: {workers}', end='\r')
+                pool = Pool(processes=workers)
+                results = pool.map(gen, ranges)    
                     
-                    for ix, res in enumerate(results):
-                        A = res
-                        r = ranges[ix]
-                        c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
-                        world_next[a:b+1,c:d+1] = A
-                        generation += 1
+                for ix, res in enumerate(results):
+                    A = res
+                    r = ranges[ix]
+                    c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
+                    world_next[a:b+1,c:d+1] = A
+                    generation += 1
 
             world_now = world_next
 
