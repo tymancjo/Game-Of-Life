@@ -168,7 +168,7 @@ def main():
     averspeed = []
     avFreq = 0
 
-    # splitting the world array to smaler pieces for analysy 
+    # splitting the world array to smaller pieces for analysis 
     ranges = getranges(world_now, C // 10, R // 10)
     print(ranges)
 
@@ -250,6 +250,7 @@ def main():
         if active:
             world_next = np.zeros((R,C))
             if not multi: 
+                txtcolor = (222, 222, 222)
                 # solving in series - single pipeline process
                 for r in ranges:
                     A = gen(r)
@@ -257,6 +258,7 @@ def main():
                     world_next[a:b+1,c:d+1] = A
                     generation += 1
             else:
+                txtcolor = (0, 0, 0)
                 # multiprocessing - parallel
                 with concurrent.futures.ProcessPoolExecutor() as executor:
                     results = executor.map(gen, ranges)
@@ -274,7 +276,6 @@ def main():
                 active = False
                 makestep = False
 
-        pygame.display.update()
         NOW = (dt.now() - NOW).total_seconds()
         averspeed.append(1/NOW)
         Freq = 1/NOW
@@ -282,7 +283,13 @@ def main():
             avFreq = sum(averspeed) / (3*Freq)
             averspeed = []
         
-        print(f'Gen freq: {(Freq):10.4f} gen/s; 3s averFreq: {avFreq} gem/s', end='\r',flush=True)
+        font = pygame.font.Font(pygame.font.get_default_font(), 16)
+        # now print the text
+        text_surface = font.render(f'Gen freq: {(Freq):10.1f} gen/s; 3s averFreq: {avFreq:10.1f} gem/s', True, txtcolor)
+        DISPLAY.blit(text_surface, dest=(10,5))
+        pygame.display.update()
+        
+        # print(f'Gen freq: {(Freq):10.4f} gen/s; 3s averFreq: {avFreq} gem/s', end='\r',flush=True)
 
 if __name__ == '__main__':
     main()
