@@ -23,8 +23,8 @@ import concurrent.futures
 
 # some variables for general setup
 # sizes of the world:
-sizeX = 200 // 4
-sizeY = 100 // 4
+sizeX = 200 // 1
+sizeY = 100 // 1
 
 # display resolution
 width = 1280 
