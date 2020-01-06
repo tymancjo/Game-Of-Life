@@ -21,10 +21,17 @@ from datetime import datetime as dt
 # for multiprocessing
 import concurrent.futures
 
+
+
 # some variables for general setup
 # sizes of the world:
-sizeX = 200 // 1
-sizeY = 100 // 1
+# reading from command line:
+try:
+    sizeX = max(int(sys.argv[1]), 10)
+    sizeY = max(int(sys.argv[2]), 10)
+except:
+    sizeX = 200 // 4
+    sizeY = 100 // 4
 
 # display resolution
 width = 1280 
