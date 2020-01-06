@@ -5,7 +5,7 @@
 # https://pl.wikipedia.org/wiki/Gra_w_%C5%BCycie
 
 # plan to work it out as pythonic as possible :)
-# this file is intended to be multi process version  
+# this file is intended to be multi-process version  
 
 # one: play around with numpy arrays to understood it deeply
 # pygame: used for the visual presentation of the system
@@ -21,17 +21,14 @@ from datetime import datetime as dt
 # for multiprocessing
 import concurrent.futures
 
-
-
 # some variables for general setup
 # sizes of the world:
-sizeX = 200 // 5
-sizeY = 100 // 5
+sizeX = 200 // 4
+sizeY = 100 // 4
 
 # display resolution
 width = 1280 
 height = 720 
-# height = int((sizeY / sizeX) * width) + 100 
 
 # size for the drawed rectangle
 size = int(min(width / sizeX, (height - 50) / sizeY))
@@ -43,16 +40,9 @@ offsetY = int((height - size*sizeY) / 2)
 # generating the start status of the world
 world_now = np.random.randint(2, size=(sizeY, sizeX),dtype=int)
 generation = 0
-# print('Initial world state:')
-# print(world_now)
 
 # getting the size of the world array
 R, C = world_now.shape
-
-# now lets go thru the world array
-# and proceed with the GOL algorithm
-# sum 2 or 3 - keep alive if alive
-# sum 3 - born if death
 
 # function for splitting the world array into sub portions
 def getranges(array, dR=1, dC=1):
@@ -86,7 +76,6 @@ def getranges(array, dR=1, dC=1):
     
     return output
 
-# defined functions
 def subarraysum(array, x, y):
     '''This is summing the value around given place in array 
     for the game of life algorithm 
@@ -133,6 +122,10 @@ def gen(area = None):
     # lets analyze
     for x in Crange:
         for y in Rrange:
+            # now lets go thru the world array
+            # and proceed with the GOL algorithm
+            # sum 2 or 3 - keep alive if alive
+            # sum 3 - born if death
             suma = int(subarraysum(world_now_norm, x, y))
             current = world_next[y,x]
 
@@ -146,10 +139,7 @@ def gen(area = None):
             clean_world[y-min(Rrange),x-min(Crange)] = int(world_next[y,x])
     # we bring back the world status to world now
     # world_now = np.array(world_next)
-    generation += 1
     return clean_world
-    # print(f'World of {generation}:')
-    # print(world_now)
 
 
 def main():
@@ -171,11 +161,14 @@ def main():
     averspeed = []
     avFreq = 0
 
+    # splitting the world array to smaler pieces for analysy 
     ranges = getranges(world_now, C // 10, R // 10)
     print(ranges)
 
+    # main loop
     while True:
         step += 1
+        # keeping time for performance analysis
         NOW = dt.now()
 
         if not active:
@@ -227,10 +220,10 @@ def main():
                 
         
         if setOnMouse:
+            # setting the piece where mouse is
             mmx, mmy = pygame.mouse.get_pos()
             mmc = max(0,min(C-1,int((mmx - offsetX)/(size)))) 
             mmr = max(0,min(R-1,int((mmy - offsetY)/(size)))) 
-            
             world_now[mmr, mmc] = mouseValue
             
         if not (step % drawstep):
@@ -244,17 +237,20 @@ def main():
                     pygame.draw.rect(DISPLAY,color,(offsetX + size*x+1, offsetY + size*y+1,size-1,size-1))
     
         if makestep:
+            # to triger the single step 
             active = True
 
         if active:
             world_next = np.zeros((R,C))
-            if not multi:
+            if not multi: 
+                # solving in series - single pipeline process
                 for r in ranges:
                     A = gen(r)
                     c,d,a,b = r[0][0], r[0][1], r[1][0], r[1][1]
                     world_next[a:b+1,c:d+1] = A
                     generation += 1
             else:
+                # multiprocessing - parallel
                 with concurrent.futures.ProcessPoolExecutor() as executor:
                     results = executor.map(gen, ranges)
                     
@@ -280,7 +276,5 @@ def main():
             averspeed = []
         
         print(f'Gen freq: {(Freq):10.4f} gen/s; 3s averFreq: {avFreq} gem/s', end='\r',flush=True)
-
-
 
 main()
