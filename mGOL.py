@@ -284,4 +284,5 @@ def main():
         
         print(f'Gen freq: {(Freq):10.4f} gen/s; 3s averFreq: {avFreq} gem/s', end='\r',flush=True)
 
-main()
+if __name__ == '__main__':
+    main()
