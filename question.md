@@ -41,3 +41,5 @@ File is available on GH:
 https://github.com/tymancjo/Game-Of-Life/blob/master/exampleGOL.py
 
 The piece that is responsible of the serial or parallel starts on line 231. 
+
+### Thank you for any advice!
